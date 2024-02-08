@@ -21,14 +21,13 @@ import androidx.appcompat.app.AlertDialog
 
 class GalleryActivity : AppCompatActivity() {
     companion object {
-        private const val REQUEST_CODE_PICK_IMAGE = 1001 // or any value you prefer
+        private const val REQUEST_CODE_PICK_IMAGE = 1001
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
 
-        // Access the animals list from AnimalData
         val animalData = AnimalData.animals
 
         createGalleryView(animalData)
@@ -65,9 +64,8 @@ class GalleryActivity : AppCompatActivity() {
             // Set the bitmap into the ImageView
             photoImageView.setImageBitmap(bitmap)
 
-            photoImageView.scaleType = ImageView.ScaleType.CENTER_CROP // Adjust image scale type as needed
-
-            // Calculate the desired height for the ImageView (50% of screen height)
+            // Styling calculation
+            photoImageView.scaleType = ImageView.ScaleType.CENTER_CROP
             val displayMetrics = DisplayMetrics()
             windowManager.defaultDisplay.getMetrics(displayMetrics)
             val screenHeight = displayMetrics.heightPixels
@@ -82,7 +80,7 @@ class GalleryActivity : AppCompatActivity() {
                 val index = galleryLayout.indexOfChild(it.parent as View)
                 AnimalData.animals.removeAt(index)
 
-                // Remove the clicked ImageView from the galleryLayout
+                // Remove the clicked ImageView from the GalleryLayout
                 galleryLayout.removeView(it.parent as View)
             }
 
@@ -107,8 +105,6 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     fun onAddEntryButtonClick(view: View) {
-        // Open a dialog or input field to prompt the user to enter the name for the new entry
-        // For simplicity, let's assume you have a method called showNameInputDialog() for this purpose
         showNameInputDialog()
     }
 
@@ -119,7 +115,6 @@ class GalleryActivity : AppCompatActivity() {
             .setView(inputEditText)
             .setPositiveButton("OK") { dialog, which ->
                 val name = inputEditText.text.toString()
-                // Call the method to launch the image picker with the provided name
                 addNewEntry(name)
             }
             .setNegativeButton("Cancel", null)
