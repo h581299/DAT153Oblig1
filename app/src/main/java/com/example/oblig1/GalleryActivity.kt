@@ -2,44 +2,42 @@ package com.example.oblig1
 
 import android.app.Activity
 import android.content.Intent
+
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.net.Uri
-import android.content.ContentResolver
-import android.graphics.BitmapFactory
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-
+import androidx.appcompat.app.AppCompatActivity
 
 class GalleryActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_PICK_IMAGE = 1001
+        private const val REQUEST_CODE_SHOW_IMAGE = 1002
     }
+
+    private var enteredName: String? = null
+    private var isSortedAscending = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
-
-        val animalData = AnimalData.animals
-
-        createGalleryView(animalData)
+        createGalleryView(AnimalData.animals)
     }
 
-    fun createGalleryView(animalData: MutableList<Pair<Uri, String>> ) {
+    fun createGalleryView(animalData: MutableList<Pair<Uri, String>>) {
         // Initialize the gallery layout
         val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
 
-        // We go through each entry in the animalData and adds them programmatically
+        // Create gallery view with animal data
         for ((photoResId, name) in animalData) {
-
             // Create LinearLayout to hold the ImageView and TextView
             val itemLayout = LinearLayout(this)
             itemLayout.layoutParams = LinearLayout.LayoutParams(
@@ -72,17 +70,10 @@ class GalleryActivity : AppCompatActivity() {
             val imageViewHeight = screenHeight / 2
 
             // Set layout parameters for the ImageView to make it 50% of the screen height
-            photoImageView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, imageViewHeight)
-
-            // Attach OnClickListener to the dynamically created ImageView
-            photoImageView.setOnClickListener {
-                // Remove the corresponding entry from AnimalData
-                val index = galleryLayout.indexOfChild(it.parent as View)
-                AnimalData.animals.removeAt(index)
-
-                // Remove the clicked ImageView from the GalleryLayout
-                galleryLayout.removeView(it.parent as View)
-            }
+            photoImageView.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                imageViewHeight
+            )
 
             // Create and configure TextView
             val nameTextView = TextView(this)
@@ -104,6 +95,26 @@ class GalleryActivity : AppCompatActivity() {
         }
     }
 
+    fun onSortButtonClick(view: View) {
+        val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
+
+        // Sort animal data alphabetically based on names
+        AnimalData.animals.sortBy { it.second }
+
+        // Reverse the sorting order if already sorted
+        if (!isSortedAscending) {
+            AnimalData.animals.reverse()
+        }
+
+        // Update the gallery view
+        galleryLayout.removeAllViews()
+        setContentView(R.layout.activity_gallery)
+        createGalleryView(AnimalData.animals)
+
+        // Toggle sorting order flag
+        isSortedAscending = !isSortedAscending
+    }
+
     fun onAddEntryButtonClick(view: View) {
         showNameInputDialog()
     }
@@ -123,7 +134,7 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     fun addNewEntry(name: String) {
-        // Create an intent to open the device's file system or gallery
+        // Create an intent to open the device's file system
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.type = "image/*"
         startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE)
@@ -133,20 +144,15 @@ class GalleryActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
             val imageUri = data?.data
+            val name = data?.getStringExtra("name")
             if (imageUri != null) {
-                val contentResolver = contentResolver
-                val cursor = contentResolver.query(imageUri, null, null, null, null)
-                cursor?.use {
-                    if (it.moveToFirst()) {
-                        val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        val imageName = it.getString(nameIndex)
-                        // Add the new entry to AnimalData with the image URI and name
-                        AnimalData.animals.add(Pair(imageUri, imageName))
+                // Add the content URI and name to AnimalData
+                AnimalData.animals.add(Pair(imageUri, name?: "Jerry"))
 
-                        // Update the gallery view to display the new entry
-                        createGalleryView(AnimalData.animals)
-                    }
-                }
+                val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
+                galleryLayout.removeAllViews()
+                setContentView(R.layout.activity_gallery)
+                createGalleryView(AnimalData.animals)
             }
         }
     }

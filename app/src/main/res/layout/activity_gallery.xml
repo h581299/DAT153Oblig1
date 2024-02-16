@@ -21,8 +21,16 @@
                 android:id="@+id/addEntryButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Add Entry"
+                android:text="Add"
                 android:onClick="onAddEntryButtonClick"
+                />
+
+            <Button
+                android:id="@+id/sortButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sort"
+                android:onClick="onSortButtonClick"
                 />
 
         </LinearLayout>

@@ -16,3 +16,10 @@ local.properties
 *.log
 *.apk
 output.json
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+*.jks
+*.keystore
+google-services.json
+*.hprof
