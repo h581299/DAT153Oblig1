@@ -2,7 +2,6 @@ package com.example.oblig1
 
 import android.app.Activity
 import android.content.Intent
-
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
@@ -16,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+
 
 class GalleryActivity : AppCompatActivity() {
     companion object {
@@ -74,6 +74,13 @@ class GalleryActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 imageViewHeight
             )
+
+            // Add a onClickListener for removing entry when image is clicked
+            photoImageView.setOnClickListener {
+                val index = galleryLayout.indexOfChild(it.parent as View)
+                AnimalData.animals.removeAt(index - 2)
+                galleryLayout.removeView(it.parent as View)
+            }
 
             // Create and configure TextView
             val nameTextView = TextView(this)
@@ -137,15 +144,23 @@ class GalleryActivity : AppCompatActivity() {
         // Create an intent to open the device's file system
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.type = "image/*"
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.putExtra("name", name)
         startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
+
+
             val imageUri = data?.data
             val name = data?.getStringExtra("name")
             if (imageUri != null) {
+                contentResolver.takePersistableUriPermission(
+                    imageUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
                 // Add the content URI and name to AnimalData
                 AnimalData.animals.add(Pair(imageUri, name?: "Jerry"))
 
