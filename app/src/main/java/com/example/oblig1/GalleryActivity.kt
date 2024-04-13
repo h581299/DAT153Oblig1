@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -15,6 +16,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.example.oblig1.AnimalViewModel
+import com.example.oblig1.AnimalDatabase
 
 
 class GalleryActivity : AppCompatActivity() {
@@ -22,6 +28,8 @@ class GalleryActivity : AppCompatActivity() {
         private const val REQUEST_CODE_PICK_IMAGE = 1001
         private const val REQUEST_CODE_SHOW_IMAGE = 1002
     }
+
+    private lateinit var animalDao: AnimalDao
 
     private var enteredName: String? = null
     private var isSortedAscending = true
@@ -162,12 +170,33 @@ class GalleryActivity : AppCompatActivity() {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
                 // Add the content URI and name to AnimalData
-                AnimalData.animals.add(Pair(imageUri, name?: "Jerry"))
+                // AnimalData.animals.add(Pair(imageUri, name?: "Jerry"))
+
+                // Initialize your AnimalDao
+                animalDao = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main)).animalDao()
+
+                // Call a function to add image and name to the database
+                addAnimalToDatabase(imageUri, name?: "Jerry")
 
                 val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
                 galleryLayout.removeAllViews()
                 setContentView(R.layout.activity_gallery)
                 createGalleryView(AnimalData.animals)
+            }
+        }
+    }
+
+    private fun addAnimalToDatabase(imageUri: Uri, name: String) {
+        // Create an Animal object
+        val animal = Animal(name = name, photoUri = imageUri.toString())
+
+        // Insert the Animal object into the database
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                animalDao.insertAnimal(animal)
+                Log.d("YourActivity", "Animal added successfully: $animal")
+            } catch (e: Exception) {
+                Log.e("YourActivity", "Error adding animal: ${e.message}")
             }
         }
     }

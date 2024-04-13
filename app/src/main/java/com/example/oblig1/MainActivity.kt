@@ -6,18 +6,46 @@ import android.os.Bundle
 import android.content.Intent
 import android.net.Uri
 import android.view.View
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
+import com.example.oblig1.AnimalViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import com.example.oblig1.AnimalDatabase
+
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var viewModel: AnimalViewModel
+    private lateinit var animalDao: AnimalDao
+    private lateinit var animalDatabase: AnimalDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Initialize AnimalDatabase instance
+        animalDatabase = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main))
+
+        // Get AnimalDao instance from AnimalDatabase
+        animalDao = animalDatabase.animalDao()
+
+        val repository = AnimalRepository(animalDao)
+
         // Initialize AnimalData
-        AnimalData.animals.apply {
-            add(Pair(getResourceUri(R.drawable.cat), "Cat"))
-            add(Pair(getResourceUri(R.drawable.dog), "Dog"))
-            add(Pair(getResourceUri(R.drawable.opossum), "Opossum"))
-        }
+        viewModel = ViewModelProvider(this, AnimalViewModelFactory(repository)).get(AnimalViewModel::class.java)
+
+        // Observe the list of animals
+        viewModel.allAnimals.observe(this, Observer { animals ->
+            // Update your UI here with the list of animals
+            // You can initialize your AnimalData object here with the observed data
+            animals.forEach { animal ->
+                AnimalData.animals.add(Pair(Uri.parse(animal.photoUri), animal.name))
+            }
+        })
     }
 
     // Navigation button to GalleryActivity
