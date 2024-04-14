@@ -11,6 +11,9 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import java.io.InputStream
 
 class QuizActivity : AppCompatActivity() {
@@ -19,6 +22,8 @@ class QuizActivity : AppCompatActivity() {
     private lateinit var option2Button: Button
     private lateinit var option3Button: Button
     private lateinit var scoreTextView: TextView
+
+    private lateinit var animalDao: AnimalDao
 
     private var score: Int = 0
 
@@ -32,49 +37,50 @@ class QuizActivity : AppCompatActivity() {
         option3Button = findViewById(R.id.option3Button)
         scoreTextView = findViewById(R.id.scoreTextView)
 
-        displayNextQuestion()
+        // Initialize AnimalDatabase instance and obtain AnimalDao
+        val animalDatabase = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main))
+        animalDao = animalDatabase.animalDao()
 
+        // Observe changes in the database and update UI accordingly
+        animalDao.getRandomAnimals(1).observe(this, Observer { animals ->
+            animals.firstOrNull()?.let { animal ->
+                // Update UI with the latest animal data
+                displayNextQuestion(animal)
+            }
+        })
     }
 
-    private fun displayNextQuestion() {
-        // Randomly select a photo from gallery
-        val randomEntry = AnimalData.animals.random()
-        val imageUri = randomEntry.first
-        val correctName = randomEntry.second
-
-        Log.d("MyTag", "$imageUri")
-
+    private fun displayNextQuestion(currentAnimal: Animal) {
         // Set the photo in the ImageView
-        if (imageUri.scheme == ContentResolver.SCHEME_ANDROID_RESOURCE) {
-            // URI represents a resource ID
-            val resourceId = resources.getIdentifier(imageUri.lastPathSegment, "drawable", packageName)
-            Log.d("MyTag2", "$resourceId")
+        if (currentAnimal.photoUri.startsWith("drawable")) {
+            val resourceId = resources.getIdentifier(currentAnimal.photoUri, "drawable", packageName)
             imageView.setImageResource(resourceId)
         } else {
-            // URI represents a file or content URI
-            Log.d("MyTag3", "mytag3")
-            val inputStream: InputStream? = contentResolver.openInputStream(imageUri)
+            val inputStream: InputStream? = contentResolver.openInputStream(Uri.parse(currentAnimal.photoUri))
             val bitmap: Bitmap? = BitmapFactory.decodeStream(inputStream)
             imageView.setImageBitmap(bitmap)
         }
 
         // Get three random names (one right and two wrong)
-        val options = mutableListOf(correctName)
-        val uniqueNames = AnimalData.animals.map { it.second }.distinct()
-        if (uniqueNames.size >= 3) {
-            val shuffledNames = uniqueNames.shuffled().take(3)
-            options.addAll(shuffledNames.filter { it != correctName }.take(2))
-        }
+        val options = mutableListOf(currentAnimal.name)
+        val uniqueNames = mutableListOf<String>()
+        animalDao.getAllAnimals().observe(this, Observer { animals ->
+            uniqueNames.addAll(animals.map { it.name }.distinct())
+            if (uniqueNames.size >= 3) {
+                val shuffledNames = uniqueNames.shuffled().take(3)
+                options.addAll(shuffledNames.filter { it != currentAnimal.name }.take(2))
 
-        options.shuffle()
+                options.shuffle()
 
-        option1Button.text = options[0]
-        option2Button.text = options[1]
-        option3Button.text = options[2]
+                option1Button.text = options[0]
+                option2Button.text = options[1]
+                option3Button.text = options[2]
+            }
+        })
 
-        option1Button.setOnClickListener { checkAnswer(option1Button.text.toString(), correctName) }
-        option2Button.setOnClickListener { checkAnswer(option2Button.text.toString(), correctName) }
-        option3Button.setOnClickListener { checkAnswer(option3Button.text.toString(), correctName) }
+        option1Button.setOnClickListener { checkAnswer(option1Button.text.toString(), currentAnimal.name) }
+        option2Button.setOnClickListener { checkAnswer(option2Button.text.toString(), currentAnimal.name) }
+        option3Button.setOnClickListener { checkAnswer(option3Button.text.toString(), currentAnimal.name) }
     }
 
     private fun checkAnswer(selectedName: String, correctName: String) {
@@ -85,7 +91,13 @@ class QuizActivity : AppCompatActivity() {
             Toast.makeText(this, "Incorrect! The correct name is $correctName", Toast.LENGTH_SHORT).show()
         }
         updateScore()
-        displayNextQuestion()
+        // Observe changes in the database and update UI accordingly
+        animalDao.getRandomAnimals(1).observe(this, Observer { animals ->
+            animals.firstOrNull()?.let { animal ->
+                // Update UI with the latest animal data
+                displayNextQuestion(animal)
+            }
+        })
     }
 
     private fun updateScore() {

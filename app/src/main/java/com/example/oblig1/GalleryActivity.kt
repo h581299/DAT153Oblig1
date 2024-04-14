@@ -16,6 +16,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,16 +33,52 @@ class GalleryActivity : AppCompatActivity() {
 
     private lateinit var animalDao: AnimalDao
 
+    private var currentSortedAnimalsLiveData: LiveData<List<Animal>>? = null
+
+
     private var enteredName: String? = null
     private var isSortedAscending = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
-        createGalleryView(AnimalData.animals)
+
+        // Initialize AnimalDatabase instance and obtain AnimalDao
+        val animalDatabase = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main))
+        animalDao = animalDatabase.animalDao()
+
+        updateGalleryView()
     }
 
-    fun createGalleryView(animalData: MutableList<Pair<Uri, String>>) {
+    private fun updateGalleryView() {
+        val sortedAnimalsLiveData = if (isSortedAscending) {
+            animalDao.getAllAnimalsSortedByNameAscending()
+        } else {
+            animalDao.getAllAnimalsSortedByNameDescending()
+        }
+
+        // Remove previous observer, if any
+        currentSortedAnimalsLiveData?.removeObserver(observer)
+
+        // Observe changes in the sorted list of animals
+        currentSortedAnimalsLiveData = sortedAnimalsLiveData
+
+        // Add new observer
+        currentSortedAnimalsLiveData?.observe(this, observer)
+    }
+
+    // Observer for sorted animals
+    private val observer = Observer<List<Animal>> { animals ->
+        // Convert the list of animals to the desired format
+        val animalData = animals.map { animal ->
+            Pair(Uri.parse(animal.photoUri), animal.name)
+        }.toMutableList()
+
+        // Call createGalleryView with the converted animalData
+        createGalleryView(animalData)
+    }
+
+    private fun createGalleryView(animalData: MutableList<Pair<Uri, String>>) {
         // Initialize the gallery layout
         val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
 
@@ -85,9 +123,22 @@ class GalleryActivity : AppCompatActivity() {
 
             // Add a onClickListener for removing entry when image is clicked
             photoImageView.setOnClickListener {
-                val index = galleryLayout.indexOfChild(it.parent as View)
-                AnimalData.animals.removeAt(index - 2)
-                galleryLayout.removeView(it.parent as View)
+                // Retrieve the Animal object from the database based on its URI
+                animalDao.getAnimalByUri(photoResId.toString()).observe(this@GalleryActivity, Observer { animal ->
+                    // Check if the Animal object is not null
+                    animal?.let { animalToDelete ->
+                        // Perform database operation off the main thread using a coroutine
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // Delete the animal from the database
+                            animalDao.deleteAnimal(animalToDelete)
+                        }
+
+                        // Remove the corresponding view from the gallery layout
+                        galleryLayout.removeAllViews()
+                        setContentView(R.layout.activity_gallery)
+
+                    }
+                })
             }
 
             // Create and configure TextView
@@ -110,24 +161,17 @@ class GalleryActivity : AppCompatActivity() {
         }
     }
 
+
     fun onSortButtonClick(view: View) {
         val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
-
-        // Sort animal data alphabetically based on names
-        AnimalData.animals.sortBy { it.second }
-
-        // Reverse the sorting order if already sorted
-        if (!isSortedAscending) {
-            AnimalData.animals.reverse()
-        }
-
-        // Update the gallery view
         galleryLayout.removeAllViews()
         setContentView(R.layout.activity_gallery)
-        createGalleryView(AnimalData.animals)
 
         // Toggle sorting order flag
         isSortedAscending = !isSortedAscending
+
+        // Update the gallery view based on the sorting order
+        updateGalleryView()
     }
 
     fun onAddEntryButtonClick(view: View) {
@@ -169,8 +213,6 @@ class GalleryActivity : AppCompatActivity() {
                     imageUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
-                // Add the content URI and name to AnimalData
-                // AnimalData.animals.add(Pair(imageUri, name?: "Jerry"))
 
                 // Initialize your AnimalDao
                 animalDao = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main)).animalDao()
@@ -181,7 +223,7 @@ class GalleryActivity : AppCompatActivity() {
                 val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
                 galleryLayout.removeAllViews()
                 setContentView(R.layout.activity_gallery)
-                createGalleryView(AnimalData.animals)
+
             }
         }
     }
