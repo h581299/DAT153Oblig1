@@ -2,6 +2,18 @@
 <project version="4">
   <component name="deploymentTargetDropDown">
     <value>
+      <entry key="ExampleInstrumentedTest">
+        <State />
+      </entry>
+      <entry key="GalleryActivityTest">
+        <State />
+      </entry>
+      <entry key="MainMenuNavigationTest">
+        <State />
+      </entry>
+      <entry key="QuizActivityTest">
+        <State />
+      </entry>
       <entry key="app">
         <State>
           <runningDeviceTargetsSelectedWithDialog>

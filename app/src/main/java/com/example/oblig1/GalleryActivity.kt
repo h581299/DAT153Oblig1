@@ -179,16 +179,22 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     private fun showNameInputDialog() {
-        val inputEditText = EditText(this)
+        // Inflate the dialog layout
+        val dialogView = layoutInflater.inflate(R.layout.dialog_name_input, null)
+        val inputEditText = dialogView.findViewById<EditText>(R.id.inputEditText)
+
+        // Create AlertDialog
         val dialog = AlertDialog.Builder(this)
             .setTitle("Enter Name")
-            .setView(inputEditText)
+            .setView(dialogView)
             .setPositiveButton("OK") { dialog, which ->
                 val name = inputEditText.text.toString()
                 addNewEntry(name)
             }
             .setNegativeButton("Cancel", null)
             .create()
+
+        // Show the dialog
         dialog.show()
     }
 
@@ -243,4 +249,10 @@ class GalleryActivity : AppCompatActivity() {
         }
     }
 
+    fun simulateImageSelection(imageUri: Uri, name: String) {
+        onActivityResult(REQUEST_CODE_PICK_IMAGE, Activity.RESULT_OK, Intent().apply {
+            putExtra("name", name)
+            putExtra("data", imageUri.toString())
+        })
+    }
 }

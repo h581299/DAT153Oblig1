@@ -7,11 +7,13 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.Observer
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.io.InputStream
@@ -83,24 +85,27 @@ class QuizActivity : AppCompatActivity() {
         option3Button.setOnClickListener { checkAnswer(option3Button.text.toString(), currentAnimal.name) }
     }
 
-    private fun checkAnswer(selectedName: String, correctName: String) {
+    fun checkAnswer(selectedName: String, correctName: String) {
+        val rootView = findViewById<View>(R.id.constraintLayout) // Assuming the id of the ConstraintLayout is constraintLayout
+
         if (selectedName == correctName) {
             score++
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+            Snackbar.make(rootView, "Your message here", Snackbar.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Incorrect! The correct name is $correctName", Toast.LENGTH_SHORT).show()
+            Snackbar.make(rootView, "Your message here", Snackbar.LENGTH_SHORT).show()
         }
         updateScore()
         // Observe changes in the database and update UI accordingly
-        animalDao.getRandomAnimals(1).observe(this, Observer { animals ->
-            animals.firstOrNull()?.let { animal ->
-                // Update UI with the latest animal data
-                displayNextQuestion(animal)
-            }
-        })
+        // Update UI with the latest animal data
+        val animals = animalDao.getRandomAnimals(1).value
+        animals?.firstOrNull()?.let { animal ->
+            displayNextQuestion(animal)
+        }
     }
 
     private fun updateScore() {
-        scoreTextView.text = "Score: $score"
+        this@QuizActivity.runOnUiThread {
+            this@QuizActivity.scoreTextView.text = "Score: $score"
+        }
     }
 }
