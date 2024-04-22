@@ -90,9 +90,9 @@ class QuizActivity : AppCompatActivity() {
 
         if (selectedName == correctName) {
             score++
-            Snackbar.make(rootView, "Your message here", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(rootView, "Correct!", Snackbar.LENGTH_SHORT).show()
         } else {
-            Snackbar.make(rootView, "Your message here", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(rootView, "Wrong!", Snackbar.LENGTH_SHORT).show()
         }
         updateScore()
         // Observe changes in the database and update UI accordingly

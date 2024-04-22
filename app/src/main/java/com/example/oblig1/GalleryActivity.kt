@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.oblig1.AnimalViewModel
 import com.example.oblig1.AnimalDatabase
+import kotlinx.coroutines.withContext
 
 
 class GalleryActivity : AppCompatActivity() {
@@ -207,34 +208,38 @@ class GalleryActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
+            handleIntent(data)
+        }
+    }
 
-
-            val imageUri = data?.data
-            val name = data?.getStringExtra("name")
-            if (imageUri != null) {
+    fun handleIntent(data: Intent?) {
+        val imageUri = data?.data
+        val name = data?.getStringExtra("name")
+        if (imageUri != null) {
+            val scheme = imageUri.scheme
+            if (scheme != "android.resource") {
                 contentResolver.takePersistableUriPermission(
                     imageUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
-
-                // Initialize your AnimalDao
-                animalDao = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main)).animalDao()
-
-                // Call a function to add image and name to the database
-                addAnimalToDatabase(imageUri, name?: "Jerry")
-
-                val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
-                galleryLayout.removeAllViews()
-                setContentView(R.layout.activity_gallery)
-
             }
+
+            // Initialize your AnimalDao
+            animalDao = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main)).animalDao()
+            // Call a function to add image and name to the database
+            addAnimalToDatabase(imageUri, name?: "Jerry")
+
+            val galleryLayout: LinearLayout = findViewById(R.id.galleryLayout)
+            galleryLayout.removeAllViews()
+            setContentView(R.layout.activity_gallery)
+
         }
     }
 
-    private fun addAnimalToDatabase(imageUri: Uri, name: String) {
+    fun addAnimalToDatabase(imageUri: Uri, name: String) {
         // Create an Animal object
         val animal = Animal(name = name, photoUri = imageUri.toString())
 
@@ -244,8 +249,15 @@ class GalleryActivity : AppCompatActivity() {
                 animalDao.insertAnimal(animal)
                 Log.d("YourActivity", "Animal added successfully: $animal")
             } catch (e: Exception) {
-                Log.e("YourActivity", "Error adding animal: ${e.message}")
+                Log.e("YourActivity", "ErroFFFr adding animal: ${e.message}")
             }
+        }
+    }
+
+    suspend fun getNumberOfEntriesFromDao(): Int {
+        return withContext(Dispatchers.IO) {
+            // Perform database operation in IO thread
+            return@withContext animalDao.getNumberOfEntries()
         }
     }
 

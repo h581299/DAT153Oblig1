@@ -30,5 +30,5 @@ interface AnimalDao {
     fun deleteAnimal(animal: Animal)
 
     @Query("SELECT COUNT(*) FROM animals")
-    fun getNumberOfEntries(): LiveData<Int>
+    fun getNumberOfEntries(): Int
 }
