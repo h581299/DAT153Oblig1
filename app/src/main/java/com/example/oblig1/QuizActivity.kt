@@ -43,10 +43,12 @@ class QuizActivity : AppCompatActivity() {
         val animalDatabase = AnimalDatabase.getDatabase(applicationContext, CoroutineScope(Dispatchers.Main))
         animalDao = animalDatabase.animalDao()
 
-        // Observe changes in the database and update UI accordingly
+        fetchNextQuestion()
+    }
+
+    private fun fetchNextQuestion() {
         animalDao.getRandomAnimals(1).observe(this, Observer { animals ->
             animals.firstOrNull()?.let { animal ->
-                // Update UI with the latest animal data
                 displayNextQuestion(animal)
             }
         })
@@ -68,12 +70,15 @@ class QuizActivity : AppCompatActivity() {
         // Get three random names (one right and two wrong)
         val options = mutableListOf(currentAnimal.name)
         val uniqueNames = mutableListOf<String>()
-        animalDao.getAllAnimals().observe(this, Observer { animals ->
-            uniqueNames.addAll(animals.map { it.name }.distinct())
-            if (uniqueNames.size >= 3) {
-                val shuffledNames = uniqueNames.shuffled().take(3)
-                options.addAll(shuffledNames.filter { it != currentAnimal.name }.take(2))
 
+        // Get three animals to add to the option buttons with one being the correct animal
+        animalDao.getAllAnimals().observe(this, Observer { animals ->
+            uniqueNames.clear()
+            uniqueNames.addAll(animals.map { it.name }.distinct())
+
+            if (uniqueNames.size >= 3) {
+                val wrongNames = uniqueNames.filter { it != currentAnimal.name }.shuffled().take(2)
+                options.addAll(wrongNames)
                 options.shuffle()
 
                 option1Button.text = options[0]
@@ -82,6 +87,7 @@ class QuizActivity : AppCompatActivity() {
             }
         })
 
+        // Set onClickListener for each button to call checkAnswer with their assigned animal and the correct answer
         option1Button.setOnClickListener { checkAnswer(option1Button.text.toString(), currentAnimal.name) }
         option2Button.setOnClickListener { checkAnswer(option2Button.text.toString(), currentAnimal.name) }
         option3Button.setOnClickListener { checkAnswer(option3Button.text.toString(), currentAnimal.name) }
@@ -90,21 +96,21 @@ class QuizActivity : AppCompatActivity() {
     fun checkAnswer(selectedName: String, correctName: String) {
         val rootView = findViewById<View>(R.id.constraintLayout) // Assuming the id of the ConstraintLayout is constraintLayout
 
+        // Check if the answer was wrong and increaase the score if it was.
         if (selectedName == correctName) {
             score++
             Snackbar.make(rootView, "Correct!", Snackbar.LENGTH_SHORT).show()
         } else {
             Snackbar.make(rootView, "Wrong!", Snackbar.LENGTH_SHORT).show()
         }
+
         updateScore()
-        // Observe changes in the database and update UI accordingly
-        // Update UI with the latest animal data
-        val animals = animalDao.getRandomAnimals(1).value
-        animals?.firstOrNull()?.let { animal ->
-            displayNextQuestion(animal)
-        }
+
+        fetchNextQuestion() // Fetch the next question
+
     }
 
+    // Update score display accordingly to current score
     private fun updateScore() {
         this@QuizActivity.runOnUiThread {
             this@QuizActivity.scoreTextView.text = "Score: $score"
