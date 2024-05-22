@@ -57,10 +57,12 @@ class QuizActivity : AppCompatActivity() {
         if (currentAnimal.photoUri.startsWith("drawable")) {
             val resourceId = resources.getIdentifier(currentAnimal.photoUri, "drawable", packageName)
             imageView.setImageResource(resourceId)
+            imageView.tag = currentAnimal.name
         } else {
             val inputStream: InputStream? = contentResolver.openInputStream(Uri.parse(currentAnimal.photoUri))
             val bitmap: Bitmap? = BitmapFactory.decodeStream(inputStream)
             imageView.setImageBitmap(bitmap)
+            imageView.tag = currentAnimal.name
         }
 
         // Get three random names (one right and two wrong)

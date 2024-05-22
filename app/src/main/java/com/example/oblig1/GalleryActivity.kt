@@ -25,7 +25,6 @@ import com.example.oblig1.AnimalViewModel
 import com.example.oblig1.AnimalDatabase
 import kotlinx.coroutines.withContext
 
-
 class GalleryActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_PICK_IMAGE = 1001
@@ -35,7 +34,6 @@ class GalleryActivity : AppCompatActivity() {
     private lateinit var animalDao: AnimalDao
 
     private var currentSortedAnimalsLiveData: LiveData<List<Animal>>? = null
-
 
     private var enteredName: String? = null
     private var isSortedAscending = true
